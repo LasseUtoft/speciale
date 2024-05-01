@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def extract_løsning_info(data):
     løsning_navn = data.get('Name', 'Navn ikke tilgængelig')
-    beskrivelse = data.get('Description', 'Beskrivelse ikke tilgængelig')
+    beskrivelse = data.get('Description', 'Ingen beskrivelse angivet')
     
     ##opstart
     opstartes = []
@@ -35,6 +35,9 @@ def extract_løsning_info(data):
 
     ekstra_info = extract_ekstra_info(data)
 
+    if beskrivelse is None:
+        beskrivelse = 'Ingen beskrivelse angivet'
+
     return løsning_navn, beskrivelse, opstart_text, antal_blanketter, felter_anvendt, ekstra_info
 
 def recursive_parse_elements(items, typenames_translation, typenames, exclude_types):
@@ -51,10 +54,12 @@ def parse_felter_anvendt(data):
     typenames_translation = {
         "ElementGroup": "Gruppe",
         "ElementTextfield": "Tekstfelt",
+        "ElementTextFieldFormatted": "Tekstfelt med formatering",
         "ElementNumber": "Talfelt",
         "ElementMultiSelect": "Multivælger",
         "ElementPerson": "Personfelt",
         "ElementDate": "Datofelt",
+        "ElementEmail": "E-mailadresse",
         "ElementInfoText": "Informationtekst",
         "ElementYesNo": "JaNejFelt",
         "ElementCheckBox": "Afkrydsningsfelt",
@@ -94,7 +99,7 @@ def parse_felter_anvendt(data):
         "ElementAPI": "API-felt"
     }
     
-    exclude_types = {"ElementEkstraLinjer", "ElementContainer", "ElementRoot"}  # Types to exclude
+    exclude_types = {"ElementEkstraLinjer", "ElementContainer", "ElementRoot"}
 
     blanketter = data.get('ProcesData', {}).get('Blanketter', [])
     typenames = set()
@@ -141,6 +146,7 @@ def classify_activities(data):
         blanket_view = activity.get('AktivitetBlanketVisning', [])
         skabelon_settings = activity.get('AktivitetSkabelonSettings', {})
         benyt_signering = skabelon_settings.get('BenytSignering', False)
+        dataaflevering_info = []
 
         if data_handler:
             type = "Dataaflevering"
@@ -148,24 +154,29 @@ def classify_activities(data):
             type = "Tom aktivitet"
         elif activity_id in godkender_mapping:
             type = "Godkend"
-        elif not data_handler:
+        else:
             type = "Udfyld"
-        else:
-            type = "Uklassificeret"
 
-        friendly_name = activity.get('FriendlyName', 'Unavngiven aktivitet')
+        # Initialize friendly_name once for all types with a check for None or empty
+        friendly_name = activity.get('FriendlyName')
+        if not friendly_name:
+            friendly_name = 'Unavngiven aktivitet'
 
-        if type == "Tom aktivitet" and str(friendly_name).lower() == "none" and idx == total_activities - 1:
-            friendly_name = "Slut"
-        else:
-            friendly_name = activity.get('FriendlyName', 'Unavngiven aktivitet')
+        if type == "Tom aktivitet":
+            if friendly_name.lower() == "none" and idx == total_activities - 1:
+                friendly_name = "Slut"
+            elif friendly_name == "Unavngiven aktivitet" and idx == total_activities - 1:
+                friendly_name = "Unavngiven aktivitet (Slut)"
 
         if type == "Udfyld" and benyt_signering:
             friendly_name += " (Inkl. signering)"
 
         if type == "Dataaflevering":
             dataaflevering_info = [f"\t- {handler.get('DatabehandlerNavn', '')}: {handler.get('Navn', '')}" for handler in data_handler]
-            friendly_name += "\n" + "\n".join(dataaflevering_info)
+            if dataaflevering_info:
+                friendly_name += "\n" + "\n".join(dataaflevering_info)
+            else:
+                friendly_name += "\nIngen dataafleveringsinformation tilgængelig"
 
         if type == "Godkend":
             referenced_activities = godkender_mapping.get(activity_id, [])
@@ -178,7 +189,7 @@ def classify_activities(data):
     return classifications
 
 def extract_ekstra_info(data):
-    """ Extract additional information from blanketter and mail templates """
+
     værdilister = []
     beskedskabeloner = []
     for blanket in data.get('ProcesData', {}).get('Blanketter', []):
@@ -187,21 +198,25 @@ def extract_ekstra_info(data):
         if værdilistenavn:
             værdilister.append(f"værdilisten '{værdilistenavn}'")
     
+    beskedskabeloner = []
     for template in data.get('MailTemplate', []):
         navn = template.get('Navn', None)
-        if navn:
-            beskedskabeloner.append(f"beskedskabelonen '{navn}'")
+        formatted_navn = f"beskedskabelonen '{navn}'"
+        if navn and formatted_navn not in beskedskabeloner:
+            beskedskabeloner.append(formatted_navn)
     
     combined = værdilister + beskedskabeloner
     if combined:
         info = ", ".join(combined)
         return f"Løsningen anvender {info}"
     else:
-        return "Ingen yderligere information tilgængelig"
+        return "Ingen værdilister eller beskedskabeloner."
 
 def main():
     st.title('Speciale Demo: JSON-Til-Tekst')
-    uploaded_file = st.file_uploader("Upload din JSON fil her", type=['json'])
+    st.markdown("###")
+    st.subheader('Upload din JSON fil nedenfor')
+    uploaded_file = st.file_uploader("Træk din JSON fil ned i feltet eller vælg 'Browse files' for at uploade din arbejdsgang-JSON", type=['json'])
 
     if uploaded_file is not None:
         data = json.load(uploaded_file)
@@ -210,25 +225,32 @@ def main():
             classified_activities = classify_activities(data)
             
             # Display løsningens navn and description
-            beskrivelse_text = st.text_area("Skriv en beskrivelse af din løsning", value=beskrivelse)
+        st.subheader("Beskrivelse")
+        beskrivelse_text = st.text_area("Skriv en beskrivelse af din løsning", value=beskrivelse)
 
-            output = (
-            f"**Løsningens navn**: {løsning_navn}\n\n"
-            f"**Beskrivelse:** {beskrivelse_text} {beskrivelse}\n\n"
+        head = (
+            f"{løsning_navn}\n\n"
+        )
+        body = (
+            "\n\n"
+            f"**Beskrivelse:** {beskrivelse_text}\n\n"
             f"**Opstartes:** {opstart_text}\n\n"
             f"**Antal blanketter:** {antal_blanketter}\n\n"
             f"**Felter anvendt:** {felter_anvendt}\n\n"
             f"**Ekstra information:** {ekstra_info}\n\n"
-            f"**Aktiviteter**\n\n"
+            f"**Aktiviteter**\n"
             + "\n".join(f"- {activity.strip()}" if ":" not in activity else f"  - {activity.strip()}" for activity in classified_activities)
         )
 
-    if st.button("Lav en beskrivelse af min JSON"):
-        # Process data and display
-        st.markdown(output)
-    else:
-        st.text("Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.")
+        st.markdown("###")
+
+        if st.button("Lav en beskrivelse af min JSON"):
+
+            styled_output = f"""<div style="background-color: #f8f9fa; border-left: 5px solid #007BFF; padding: 10px; margin: 10px 0; border-radius: 5px;"><h3>{head}</h3>{body}</div>"""
+            st.markdown(styled_output, unsafe_allow_html=True)
+
+        else:
+            st.text("Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.")
 
 if __name__ == "__main__":
     main()
-

@@ -215,7 +215,7 @@ def extract_ekstra_info(data):
 def main():
     st.title('Speciale Demo: JSON-Til-Tekst')
     st.markdown("###")
-    st.subheader('Upload din JSON fil nedenfor')
+    st.subheader('Upload din JSON fil')
     uploaded_file = st.file_uploader("Træk din JSON fil ned i feltet eller vælg 'Browse files' for at uploade din arbejdsgang-JSON", type=['json'])
 
     if uploaded_file is not None:
@@ -223,10 +223,9 @@ def main():
         if data:
             løsning_navn, beskrivelse, opstart_text, antal_blanketter, felter_anvendt, ekstra_info = extract_løsning_info(data)
             classified_activities = classify_activities(data)
-            
-            # Display løsningens navn and description
-        st.subheader("Beskrivelse")
-        beskrivelse_text = st.text_area("Skriv en beskrivelse af din løsning", value=beskrivelse)
+        st.markdown("###")    
+        st.subheader("Beskriv din løsning")
+        beskrivelse_text = st.text_area("Her kan du tilføje en beskrivels af din løsning, eller uddybe den der allerede er angivet i XFlow", value=beskrivelse)
 
         head = (
             f"{løsning_navn}\n\n"
@@ -249,8 +248,10 @@ def main():
             styled_output = f"""<div style="background-color: #f8f9fa; border-left: 5px solid #007BFF; padding: 10px; margin: 10px 0; border-radius: 5px;"><h3>{head}</h3>{body}</div>"""
             st.markdown(styled_output, unsafe_allow_html=True)
 
+            st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder")
+            st.button("Tryk her for at poste din løsning i Community")
         else:
-            st.text("Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.")
+            st.markdown("*Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.*")
 
 if __name__ == "__main__":
     main()

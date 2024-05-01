@@ -37,8 +37,17 @@ def extract_løsning_info(data):
 
     return løsning_navn, beskrivelse, opstart_text, antal_blanketter, felter_anvendt, ekstra_info
 
+def recursive_parse_elements(items, typenames_translation, typenames, exclude_types):
+    for item in items:
+        typename = item.get('Typename', 'Unknown')
+        if typename not in exclude_types:  # Only add if not in the exclude list
+            translated_typename = typenames_translation.get(typename, typename)
+            typenames.add(translated_typename)
+        # Continue to check for nested elements regardless of exclusion
+        if 'Elements' in item:
+            recursive_parse_elements(item['Elements'], typenames_translation, typenames, exclude_types)
+
 def parse_felter_anvendt(data):
-    """ Parse and return field types used in blanketter """
     typenames_translation = {
         "ElementGroup": "Gruppe",
         "ElementTextfield": "Tekstfelt",
@@ -56,6 +65,7 @@ def parse_felter_anvendt(data):
         "ElementAvanceretSammenligning": "Sammenligningsfelt",
         "ElementBruger": "Brugervælger",
         "ElementCPROpslag": "CPR-Opslag",
+        "ElementCVROpslag": "CVR-Opslag",
         "ElementSamtykke": "Samtykkefelt",
         "ElementPhone": "Telefonfelt",
         "ElementUnderskrift": "Underskriftfelt",
@@ -70,6 +80,7 @@ def parse_felter_anvendt(data):
         "ElementPosteringSumAar": "Brugerpostering liste",
         "ElementTimeAntal": "Timeantal",
         "ElementTimedagpenge": "Timedagpenge",
+        "ElementTable": "Tabel",
         "ElementHeadline": "Overskrift",
         "ElementStandardTekst": "Standardtekst",
         "ElementUniktId": "Unik ID-felt",
@@ -83,15 +94,21 @@ def parse_felter_anvendt(data):
         "ElementAPI": "API-felt"
     }
     
+    exclude_types = {"ElementEkstraLinjer", "ElementContainer", "ElementRoot"}  # Types to exclude
+
     blanketter = data.get('ProcesData', {}).get('Blanketter', [])
     typenames = set()
+    
     for blanket in blanketter:
-        json_data = json.loads(blanket.get('Json', '{}'))
-        items = json_data.get('Root', {}).get('Elements', [])
-        for item in items:
-            typename = item.get('Typename', 'Unknown')
-            translated_typename = typenames_translation.get(typename, typename)
-            typenames.add(translated_typename)
+        try:
+            json_data = json.loads(blanket.get('Json', '{}'))
+            items = json_data.get('Root', {}).get('Elements', [])
+            recursive_parse_elements(items, typenames_translation, typenames, exclude_types)
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
     return ", ".join(sorted(typenames))
 
 def classify_activities(data):
@@ -210,7 +227,7 @@ def main():
         # Process data and display
         st.markdown(output)
     else:
-        st.write("Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.")
+        st.text("Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.")
 
 if __name__ == "__main__":
     main()

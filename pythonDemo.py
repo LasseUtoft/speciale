@@ -1,7 +1,6 @@
 import json
 import logging
 import streamlit as st
-import pyperclip as ppc
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

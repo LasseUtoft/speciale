@@ -1,1 +1,1 @@
-pyperclip
+pip install pyperclip

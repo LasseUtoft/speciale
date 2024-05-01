@@ -242,7 +242,7 @@ def main():
         )
 
         st.markdown("###")
-
+        
         if st.button("Lav en beskrivelse af min JSON"):
 
             styled_output = f"""<div style="background-color: #f8f9fa; border-left: 5px solid #007BFF; padding: 10px; margin: 10px 0; border-radius: 5px;"><h3>{head}</h3>{body}</div>"""

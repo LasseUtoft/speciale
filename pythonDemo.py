@@ -46,7 +46,6 @@ def recursive_parse_elements(items, typenames_translation, typenames, exclude_ty
         if typename not in exclude_types:  # Only add if not in the exclude list
             translated_typename = typenames_translation.get(typename, typename)
             typenames.add(translated_typename)
-        # Continue to check for nested elements regardless of exclusion
         if 'Elements' in item:
             recursive_parse_elements(item['Elements'], typenames_translation, typenames, exclude_types)
 
@@ -157,7 +156,6 @@ def classify_activities(data):
         else:
             type = "Udfyld"
 
-        # Initialize friendly_name once for all types with a check for None or empty
         friendly_name = activity.get('FriendlyName')
         if not friendly_name:
             friendly_name = 'Unavngiven aktivitet'

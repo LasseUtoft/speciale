@@ -248,8 +248,7 @@ def main():
 
             st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder")
             
-            if st.button("Tryk her for at poste din løsning i Community"):
-                yaya
+            st.button("Tryk her for at poste din løsning i Community"):
         else:
             st.markdown("*Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.*")
 

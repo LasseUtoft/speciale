@@ -1,7 +1,7 @@
 import json
 import logging
 import streamlit as st
-import pyperclip
+## import pyperclip
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -246,9 +246,7 @@ def main():
             styled_output = f"""<div style="background-color: #f8f9fa; border-left: 5px solid #007BFF; padding: 10px; margin: 10px 0; border-radius: 5px;"><h3>{head}</h3>{body}</div>"""
             st.markdown(styled_output, unsafe_allow_html=True)
 
-            if st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder"):
-                pyperclip.copy(styled_output)
-                
+            st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder") 
             st.button("Tryk her for at poste din løsning i Community")
             
         else:

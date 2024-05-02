@@ -1,6 +1,7 @@
 import json
 import logging
 import streamlit as st
+import pymsteams
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -247,7 +248,9 @@ def main():
             st.markdown(styled_output, unsafe_allow_html=True)
 
             st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder")
-            st.button("Tryk her for at poste din løsning i Community")
+            
+            if st.button("Tryk her for at poste din løsning i Community"):
+                yaya
         else:
             st.markdown("*Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.*")
 

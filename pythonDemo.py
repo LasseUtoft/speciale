@@ -242,15 +242,16 @@ def main():
         st.markdown("###")
 
         if st.button("Lav en beskrivelse af min JSON"):
-
             styled_output = f"""<div style="background-color: #f8f9fa; border-left: 5px solid #007BFF; padding: 10px; margin: 10px 0; border-radius: 5px;"><h3>{head}</h3>{body}</div>"""
             st.markdown(styled_output, unsafe_allow_html=True)
 
-            st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder") 
-            st.button("Tryk her for at poste din løsning i Community")
-            
-        else:
-            st.markdown("*Når du trykker på knappen, vil der blive dannet en beskrivelse af din JSON.*")
+            if st.button("Tryk her for at kopiere beskrivelsen til din udklipsholder"): 
+                st.markdown("demo version")
+
+            if st.button("Tryk her for at poste din løsning i Community"):
+                st.markdown("demo version")
+    else:
+        st.markdown("*Når du uploader din JSON, bliver en beskrivelse af den vist her.*")
 
 if __name__ == "__main__":
     main()

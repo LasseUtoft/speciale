@@ -75,8 +75,8 @@ def parse_felter_anvendt(data):
         "ElementSammenligning" : "Sammenligningsfelt (gl. version)",
         "ElementPhone": "Telefonfelt",
         "ElementUnderskrift": "Underskriftfelt",
-        "ElementAdresse": "Adressefelt",
-        "ElementAfstand": "Afstandsfelt",
+        "ElementAdresse": "Adresse",
+        "ElementAfstand": "Afstand",
         "ElementGisKort": "GIS-Kort",
         "ElementMatrikel": "Matrikelvælger",
         "ElementBooking": "Bookingelement",
@@ -89,17 +89,50 @@ def parse_felter_anvendt(data):
         "ElementTable": "Tabel",
         "ElementHeadline": "Overskrift",
         "ElementStandardTekst": "Standardtekst",
-        "ElementUniktId": "Unik ID-felt",
-        "ElementImageCrop": "Billedefelt",
-        "ElementUpload": "Filupload-felt",
+        "ElementUniktId": "Unik ID",
+        "ElementImageCrop": "Billede",
+        "ElementUpload": "Filupload",
         "ElementHelpDocument": "Hjælpedokument",
         "ElementLink": "Link-felt",
         "ElementQRCode": "QR Kode",
         "ElementVideo": "Video-felt",
         "ElementFirma": "Virksomhedsoplysninger",
-        "ElementAPI": "API-felt"
+        "ElementAPI": "API-felt",
+        "ElementAposAMR": "APOS AMR",
+        "ElementAposMedarbejder": "APOS Medarbejder",
+        "ElementBetaling": "Betaling",
+        "ElementBlanketId": "BlanketID",
+        "ElementCVR": "CVR-felt",
+        "ElementCprCvrOplysninger": "CPR-CVR-felt",
+        "ElementEAN": "EAN-nummer",
+        "ElementEjendom": "Ejendom",
+        "ElementLoebeNummer": "Løbenummer",
+        "ElementNavision": "Navision",
+        "ElementNavisionDimension": "Navision Dimension",
+        "ElementOpusAnsaettelsesforhold": "Opus Ansættelsesforhold",
+        "ElementPosteringListe": "Posteringsliste",
+        "ElementSBSCreation": "SBS Opret",
+        "ElementSBSValidation": "SBS Validering",
+        "ElementSBSYSValiderSag": "SBSYS Valider Sag",
+        "ElementSLSAnsvarAfdeling": "SLS Ansvar Afdeling",
+        "ElementSbsysHandleplan": "SBSYS Handleplan",
+        "ElementSbsysHandleplanMaal": "SBSYS Handleplan Mål",
+        "ElementSlider": "Slider",
+        "ElementSlsAnsaettelsesforhold": "SLS Ansættelsesforhold",
+        "ElementSlsFerieregnskab": "SLS Ferieregnskab",
+        "ElementSlsFravaerregnskab": "SLS Fraværsregnskab",
+        "ElementSlsOmsorgregnskab": "SLS Omsorgsregnskab",
+        "ElementSmileySlider": "Smiley-Slider",
+        "ElementStartOgSlutDato": "Dato - Start og Slut",
+        "ElementStopklods": "Stopklods",
+        "ElementTjenesteNrOpslag": "Tjenestenummer Opslag",
+        "ElementUdfylderInfo": "Udfylderinformation",
+        "ElementVAT": "VAT",
+        "ElementVideo-felt": "Video-felt",
+        "ElementVirksomhedsoplysninger": "Virksomhedsoplysninger",
+        "ElementVærdiliste": "Værdiliste"
     }
-    
+
     exclude_types = {"ElementEkstraLinjer", "ElementContainer", "ElementRoot"}
 
     blanketter = data.get('ProcesData', {}).get('Blanketter', [])
@@ -188,6 +221,19 @@ def classify_activities(data):
 
     return classifications
 
+def extract_dataaflevering_info(data):
+    dataaflevering_info = []
+    activities = data.get('ProcesData', {}).get('Aktiviteter', [])
+    for activity in activities:
+        data_handler = activity.get('AktivitetDatabehandler', [])
+        if data_handler:
+            for handler in data_handler:
+                databehandler_navn = handler.get('DatabehandlerNavn', '')
+                navn = handler.get('Navn', '')
+                if databehandler_navn and navn:
+                    dataaflevering_info.append(f"\t- {databehandler_navn}: {navn}")
+    return dataaflevering_info
+
 def extract_ekstra_info(data):
 
     værdilister = []
@@ -211,6 +257,45 @@ def extract_ekstra_info(data):
         return f"Løsningen anvender {info}"
     else:
         return "Ingen værdilister eller beskedskabeloner."
+        
+def determine_type(classified_activities, felter_anvendt, dataaflevering_info):
+    
+    if len(classified_activities) > 2:
+        return "Avanceret"
+    avanceret_felter = [
+        "APOSAMR", "APOSMedarbejder", "Betaling", "Booking", "Blanketsamling",
+        "Brugerpostering liste", "Kort", "Kort(GIS)", "Ejendomsvælger",
+        "Matrikelvælger", "Navision dimension", "Navision fakturalinje",
+        "Opusansættelsesforhold", "PDFFormular", "RPAstamdata", "SBSYShandleplan",
+        "SBSYSvalider sag", "SLSAnsvar/Afdeling", "SLSAnsættelsesforhold",
+        "SLSferieregnskab", "SLSfraværregnskab", "SLSomsorgsregnskab",
+        "(SLS) Løbenummer", "Timedagpenge", "Tjenestenummer opslag"
+    ]
+    if any(field in felter_anvendt for field in avanceret_felter):
+        return "Avanceret"
+    avanceret_dataaflevering = [
+        "API", "APOSMedarbejder ret/opret", "AposAMR ret/opret", "Brugerpostering",
+        "Brugerpostering slet/inaktiver", "Brugerpostering tal", "Fil Download (OBS: pr. 1/1/23 bliver dataafleveringen avanceret)",
+        "GetOrganized", "Minejendom.Net", "NavisionInternFakture", "NavisionKreditNota",
+        "NavisionNyFaktura", "NavisionNyUdbetaling", "NavisionNyUdbetalingRejseOgUdlæg",
+        "NavisionNyUdbetalingUdenNavisionTabel", "NavisionOmpostering",
+        "NavisionOmposteringKunMedArtsKonto", "NyArbejdsgang", "OPUSEngangsTF",
+        "PrismeKreditorposter", "SBSYSopret fra sagsskabelon", "SBSYSopret fra sagsskabelon- byggesag",
+        "SLSAfgangAjour", "SLSCensoransættelse", "SLSEngangsløndel", "SLSFerieret",
+        "SLSNyansættelse", "SLSTilmelding til noget med løbende løndel", "SLSTilmeldingTilBegivenhedMedLøntræk",
+        "SLSTimeindberetning", "SLSanmodningomferiedage", "SLScensoreksamenafregning",
+        "SLSerindring", "SLSflereløbendeløndel", "SLSfravær flere hændelser",
+        "SLShaendelse ved udbetaling af ferie/særlig ferie", "SLSkontering", "SLSkørselafregning",
+        "SLSløbendeløndel", "SLSmultimediebeskatning tilmelding",
+        "SLSmultimediebeskatning tilmelding/afmelding", "SLSopretflere erindringer",
+        "SLSopretraskmelding", "SLSopretsygemelding", "SLSrejseforskud", "SLSstatistik",
+        "SLSudbetaling af ferie", "SLSændringaf ansættelsesforhold", "SMSaflevering", "SQL",
+        "SbsysOpdaterSag", "SbsysOpretSag", "Silkeborgdata- Løn Engangsindberetning",
+        "VismaCase", "WorkZone"
+    ]
+    if any(handler.get('DatabehandlerNavn', '') in avanceret_dataaflevering for handler in dataaflevering_info):
+        return "Avanceret"
+    return "Simpel"
 
 def main():
     st.title('Speciale Demo: JSON-Til-Tekst')
@@ -223,6 +308,8 @@ def main():
         if data:
             løsning_navn, beskrivelse, opstart_text, antal_blanketter, felter_anvendt, ekstra_info = extract_løsning_info(data)
             classified_activities = classify_activities(data)
+            dataaflevering_info = extract_dataaflevering_info(data)
+            typeNiveau = determine_type(classified_activities, felter_anvendt, dataaflevering_info)
         st.markdown("###")    
         st.subheader("Beskriv din løsning")
         beskrivelse_text = st.text_area("Her kan du tilføje en beskrivels af din løsning, eller uddybe den der allerede er angivet i XFlow", value=beskrivelse)
@@ -232,6 +319,7 @@ def main():
         )
         body = (
             "\n\n"
+            f"**Type:** {typeNiveau}\n\n"
             f"**Beskrivelse:** {beskrivelse_text}\n\n"
             f"**Opstartes:** {opstart_text}\n\n"
             f"**Antal blanketter:** {antal_blanketter}\n\n"
